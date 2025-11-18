@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+.vscode/
+*.egg-info/
+checkpoints/
+wandb/
+InterAct/OMOMO_new/
+/.history/
+InterAct/OMOMO/
+InterAct/OMOMO_retarget/
+intermimic/data/assets/g1/
+*.STL
+intermimic/data/assets/objects
