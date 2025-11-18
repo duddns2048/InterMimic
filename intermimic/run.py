@@ -40,6 +40,7 @@ from rl_games.torch_runner import Runner
 import numpy as np
 import copy
 import torch
+from datetime import datetime
 
 from learning import intermimic_agent
 from learning import intermimic_players
@@ -237,9 +238,15 @@ def main():
 
     if args.robotType!= 0.:
         cfg['env']['robotType'] = args.robotType
-    
+
+    # Create checkpoint directory with exp_name + timestamp
+    exp_name = cfg_train['params']['config']['name']
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    checkpoint_dir = os.path.join(args.output_path, f"{exp_name}_{timestamp}")
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
     # Create default directories for weights and statistics
-    cfg_train['params']['config']['train_dir'] = args.output_path
+    cfg_train['params']['config']['train_dir'] = checkpoint_dir
     
     vargs = vars(args)
 

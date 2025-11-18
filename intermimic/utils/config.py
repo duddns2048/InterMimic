@@ -109,7 +109,10 @@ def load_cfg(args):
 
     exp_name = cfg_train["params"]["config"]['name']
 
-    if args.experiment != 'Base':
+    # Override with --exp_name if provided
+    if args.exp_name != "":
+        exp_name = args.exp_name
+    elif args.experiment != 'Base':
         if args.metadata:
             exp_name = "{}_{}_{}_{}".format(args.experiment, args.task_type, args.device, str(args.physics_engine).split("_")[-1])
 
@@ -252,7 +255,9 @@ def get_args(benchmark=False):
         {"name": "--dataSub", "type": str, "default": 0,
             "help": "dataSubject"},
         {"name": "--robotType", "type": str, "default": 0,
-            "help": "robotType"}  ]
+            "help": "robotType"},
+        {"name": "--exp_name", "type": str, "default": "",
+            "help": "Experiment name for checkpoint organization"}  ]
 
     if benchmark:
         custom_parameters += [{"name": "--num_proc", "type": int, "default": 1, "help": "Number of child processes to launch"},

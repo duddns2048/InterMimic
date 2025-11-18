@@ -231,7 +231,7 @@ class Humanoid_SMPLX(BaseTask):
 
         actuator_props = self.gym.get_asset_actuator_properties(humanoid_asset)
         motor_efforts = [prop.motor_effort for prop in actuator_props]
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         # create force sensors at the feet
         right_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "right_foot") # R_Ankle # R_Toe
         left_foot_idx = self.gym.find_asset_rigid_body_index(humanoid_asset, "left_foot") # R_Ankle # R_Toe
@@ -257,11 +257,12 @@ class Humanoid_SMPLX(BaseTask):
         max_agg_shapes = self.num_humanoid_shapes + 65       
 
         if 'parahome' in self.motion_file[0]: 
-            max_agg_bodies+=50
-            max_agg_shapes+=60
+            max_agg_bodies+=30
+            max_agg_shapes+=30
         
         for i in range(self.num_envs):
             # create env instance
+            print(f"[{i}/{self.num_envs}]")
             env_ptr = self.gym.create_env(self.sim, lower, upper, num_per_row)
             self.gym.begin_aggregate(env_ptr, max_agg_bodies, max_agg_shapes, True)
 

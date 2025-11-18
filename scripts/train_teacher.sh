@@ -2,8 +2,9 @@ python intermimic/run.py \
 --task InterMimic \
 --cfg_env intermimic/data/cfg/omomo_train.yaml \
 --cfg_train intermimic/data/cfg/train/rlg/omomo.yaml \
---motion_file InterAct/Parahome_s10_move_kettle \
---dataSub sub10 \
+--motion_file InterAct/Parahome_s6_place_book \
+--dataSub sub6 \
 --output checkpoints \
---robotType s10.xml \
+--robotType s6.xml \
+--exp_name Parahome_s6_place_book \
 # --headless \
