@@ -41,6 +41,7 @@ from torch import optim
 import learning.amp_datasets as amp_datasets
 
 from tensorboardX import SummaryWriter
+import wandb
 
 global terminate_flag
 
@@ -157,6 +158,12 @@ class CommonAgent(a2c_continuous.A2CAgent):
                     fps_step = curr_frames / scaled_play_time
                     fps_total = curr_frames / scaled_time
                     print("epoch_num:{}".format(epoch_num), "mean_rewards:{}".format(self._get_mean_rewards()), f'fps step: {fps_step:.1f} fps total: {fps_total:.1f}')
+                    wandb.log({
+                        "epoch": epoch_num,
+                        "mean_rewards": self._get_mean_rewards(),
+                        "fps_step": fps_step,
+                        "fps_total": fps_total,
+                    })
 
                 self.writer.add_scalar('performance/total_fps', curr_frames / scaled_time, frame)
                 self.writer.add_scalar('performance/step_fps', curr_frames / scaled_play_time, frame)

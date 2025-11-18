@@ -41,6 +41,7 @@ import numpy as np
 import copy
 import torch
 from datetime import datetime
+import wandb
 
 from learning import intermimic_agent
 from learning import intermimic_players
@@ -247,6 +248,17 @@ def main():
 
     # Create default directories for weights and statistics
     cfg_train['params']['config']['train_dir'] = checkpoint_dir
+
+    # Initialize wandb
+    wandb.init(
+        project="intermimic",
+        name=f"{exp_name}_{timestamp}",
+        config={
+            **cfg,
+            **cfg_train['params']['config']
+        },
+        dir=checkpoint_dir
+    )
     
     vargs = vars(args)
 
