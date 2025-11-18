@@ -1,10 +1,11 @@
 python intermimic/run.py \
+--seed 2025 \
 --task InterMimic \
 --cfg_env intermimic/data/cfg/omomo_train.yaml \
 --cfg_train intermimic/data/cfg/train/rlg/omomo.yaml \
---motion_file InterAct/Parahome_s6_place_book \
---dataSub sub6 \
+--motion_file InterAct/int_s110_cupdrink \
+--exp_name S27_int_s110_cupdrink \
+--dataSub sub110 \
 --output checkpoints \
---robotType s6.xml \
---exp_name Parahome_s6_place_book \
-# --headless \
+--robotType s110.xml \
+--headless \
