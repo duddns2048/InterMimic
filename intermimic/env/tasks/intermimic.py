@@ -333,13 +333,13 @@ class InterMimic(Humanoid_SMPLX):
             elif 'kettle' in self.motion_file[0]: 
                 self.static_object_name = ['sink', 'diningtable']
             elif 'pan' in self.motion_file[0]: 
-                self.static_object_name = ['gasstove', 'diningtable']
+                self.static_object_name = ['gasstove', 'sink']
 
             for static_object_name in self.static_object_name:
 
                 asset_file = static_object_name + ".urdf"
                 obj_file = asset_root + 'objects/' + static_object_name + '/' + static_object_name + '.obj'
-                max_convex_hulls = 64
+                max_convex_hulls = 80
                 density = self.object_density
             
                 asset_options = gymapi.AssetOptions()

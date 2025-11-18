@@ -257,8 +257,8 @@ class Humanoid_SMPLX(BaseTask):
         max_agg_shapes = self.num_humanoid_shapes + 65       
 
         if 'parahome' in self.motion_file[0]: 
-            max_agg_bodies+=30
-            max_agg_shapes+=30
+            max_agg_bodies+=120
+            max_agg_shapes+=120
         
         for i in range(self.num_envs):
             # create env instance

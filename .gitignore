@@ -12,3 +12,4 @@ InterAct/OMOMO_retarget/
 intermimic/data/assets/g1/
 *.STL
 intermimic/data/assets/objects
+/isaacgym/
