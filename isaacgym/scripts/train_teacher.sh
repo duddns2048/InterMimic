@@ -19,4 +19,3 @@ python -m intermimic.run \
     --dataSub sub2 \
     --wandb \
     --wandb_project intermimic \
-    --wandb_name teacher_tmp
