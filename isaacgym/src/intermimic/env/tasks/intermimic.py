@@ -878,10 +878,10 @@ class InterMimic(Humanoid_SMPLX):
         return reset, terminated
 
     def _compute_reward(self, actions):
-        rb, human_reset, key_pos, ref_key_pos = self.compute_humanoid_reward(self.reward_weights)
-        ro, object_reset, obj_points, ref_obj_points = self.compute_obj_reward(self.reward_weights)
+        rb, human_reset, key_pos, ref_key_pos, rb_components = self.compute_humanoid_reward(self.reward_weights)
+        ro, object_reset, obj_points, ref_obj_points, ro_components = self.compute_obj_reward(self.reward_weights)
         rig, ig_reset = self.compute_ig_reward(self.reward_weights, key_pos, ref_key_pos, obj_points, ref_obj_points)
-        rcg, contact_reset = self.compute_cg_reward(self.reward_weights)
+        rcg, contact_reset, rcg_components = self.compute_cg_reward(self.reward_weights)
         self.rew_buf[:] = rb * ro * rig * rcg
 
         # Store reward components for logging (per-environment tensors for episode-based tracking)
@@ -889,6 +889,27 @@ class InterMimic(Humanoid_SMPLX):
         self.extras["reward_ro"] = ro
         self.extras["reward_rig"] = rig
         self.extras["reward_rcg"] = rcg
+
+        # Store sub-reward components for logging
+        # rb components: rp, rr, rpv, rrv, energy
+        self.extras["reward_rp"] = rb_components['rp']
+        self.extras["reward_rr"] = rb_components['rr']
+        self.extras["reward_rpv"] = rb_components['rpv']
+        self.extras["reward_rrv"] = rb_components['rrv']
+        self.extras["reward_energy"] = rb_components['energy']
+
+        # ro components: rop, ror, ropv, rorv, obj_energy
+        self.extras["reward_rop"] = ro_components['rop']
+        self.extras["reward_ror"] = ro_components['ror']
+        self.extras["reward_ropv"] = ro_components['ropv']
+        self.extras["reward_rorv"] = ro_components['rorv']
+        self.extras["reward_obj_energy"] = ro_components['obj_energy']
+
+        # rcg components: rcg_hand, rcg_other, rcg_all, contact_energy
+        self.extras["reward_rcg_hand"] = rcg_components['rcg_hand']
+        self.extras["reward_rcg_other"] = rcg_components['rcg_other']
+        self.extras["reward_rcg_all"] = rcg_components['rcg_all']
+        self.extras["reward_contact_energy"] = rcg_components['contact_energy']
         kinematic_reset = torch.logical_or(human_reset, object_reset)
         self.contact_reset = (self.contact_reset + contact_reset) * contact_reset
         self.kinematic_reset = torch.logical_or(ig_reset, kinematic_reset)
@@ -964,8 +985,10 @@ class InterMimic(Humanoid_SMPLX):
 
         rb = rp*rr*rpv*rrv*energy
         human_reset = (ref_key_pos - key_pos).norm(dim=-1).mean(dim=-1) > 0.5
-        
-        return rb, human_reset, key_pos, ref_key_pos
+
+        # Return sub-rewards for logging
+        rb_components = {'rp': rp, 'rr': rr, 'rpv': rpv, 'rrv': rrv, 'energy': energy}
+        return rb, human_reset, key_pos, ref_key_pos, rb_components
     
     def compute_obj_reward(self, w):
         # object pos reward
@@ -1038,7 +1061,10 @@ class InterMimic(Humanoid_SMPLX):
         obj_energy = (obj_diffacc.pow(2).mean(dim=-1).mul(-w['eg2']).exp()) * (obj_rot_diffacc.pow(2).mean(dim=-1).mul(-w['eg2']).exp())
         ro = rop*ror*ropv*rorv*obj_energy
         object_reset = (obj_points - ref_obj_points).norm(dim=-1).mean(dim=-1) > 0.5
-        return ro, object_reset, obj_points, ref_obj_points
+
+        # Return sub-rewards for logging
+        ro_components = {'rop': rop, 'ror': ror, 'ropv': ropv, 'rorv': rorv, 'obj_energy': obj_energy}
+        return ro, object_reset, obj_points, ref_obj_points, ro_components
     
     def compute_ig_reward(self, w, key_pos, ref_key_pos, obj_points, ref_obj_points):
         len_keypos = len(self._key_body_ids)
@@ -1105,7 +1131,10 @@ class InterMimic(Humanoid_SMPLX):
         contact_energy = contact_all.pow(2).mul(-w['eg3']).exp()
 
         rcg = rcg_hand*rcg_other*rcg_all*contact_energy
-        return rcg, contact_reset
+
+        # Return sub-rewards for logging
+        rcg_components = {'rcg_hand': rcg_hand, 'rcg_other': rcg_other, 'rcg_all': rcg_all, 'contact_energy': contact_energy}
+        return rcg, contact_reset, rcg_components
     
     def play_dataset_step(self, time):
 

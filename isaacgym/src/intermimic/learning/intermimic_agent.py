@@ -77,16 +77,58 @@ class InterMimicAgent(common_agent.CommonAgent):
         self.tensor_list += ['amp_obs', 'rand_action_mask']
 
         # Episode-based reward component tracking (same shape as current_rewards)
+        # Main reward components
         self.current_reward_rb = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
         self.current_reward_ro = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
         self.current_reward_rig = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
         self.current_reward_rcg = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+
+        # Sub-reward components for rb: rp, rr, rpv, rrv, energy
+        self.current_reward_rp = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_rr = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_rpv = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_rrv = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_energy = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+
+        # Sub-reward components for ro: rop, ror, ropv, rorv, obj_energy
+        self.current_reward_rop = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_ror = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_ropv = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_rorv = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_obj_energy = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+
+        # Sub-reward components for rcg: rcg_hand, rcg_other, rcg_all, contact_energy
+        self.current_reward_rcg_hand = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_rcg_other = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_rcg_all = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_contact_energy = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
 
         # AverageMeters for episode-based reward components
         self.game_reward_rb = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
         self.game_reward_ro = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
         self.game_reward_rig = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
         self.game_reward_rcg = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+
+        # AverageMeters for sub-reward components
+        # rb sub-rewards
+        self.game_reward_rp = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_rr = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_rpv = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_rrv = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_energy = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+
+        # ro sub-rewards
+        self.game_reward_rop = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_ror = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_ropv = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_rorv = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_obj_energy = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+
+        # rcg sub-rewards
+        self.game_reward_rcg_hand = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_rcg_other = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_rcg_all = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_contact_energy = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
         return
     
     def set_eval(self):
@@ -184,17 +226,59 @@ class InterMimicAgent(common_agent.CommonAgent):
 
             # Accumulate reward components (episode-based, like current_rewards)
             if 'reward_rb' in infos:
+                # Main reward components
                 self.current_reward_rb += infos['reward_rb'].unsqueeze(1)
                 self.current_reward_ro += infos['reward_ro'].unsqueeze(1)
                 self.current_reward_rig += infos['reward_rig'].unsqueeze(1)
                 self.current_reward_rcg += infos['reward_rcg'].unsqueeze(1)
 
+                # rb sub-rewards
+                self.current_reward_rp += infos['reward_rp'].unsqueeze(1)
+                self.current_reward_rr += infos['reward_rr'].unsqueeze(1)
+                self.current_reward_rpv += infos['reward_rpv'].unsqueeze(1)
+                self.current_reward_rrv += infos['reward_rrv'].unsqueeze(1)
+                self.current_reward_energy += infos['reward_energy'].unsqueeze(1)
+
+                # ro sub-rewards
+                self.current_reward_rop += infos['reward_rop'].unsqueeze(1)
+                self.current_reward_ror += infos['reward_ror'].unsqueeze(1)
+                self.current_reward_ropv += infos['reward_ropv'].unsqueeze(1)
+                self.current_reward_rorv += infos['reward_rorv'].unsqueeze(1)
+                self.current_reward_obj_energy += infos['reward_obj_energy'].unsqueeze(1)
+
+                # rcg sub-rewards
+                self.current_reward_rcg_hand += infos['reward_rcg_hand'].unsqueeze(1)
+                self.current_reward_rcg_other += infos['reward_rcg_other'].unsqueeze(1)
+                self.current_reward_rcg_all += infos['reward_rcg_all'].unsqueeze(1)
+                self.current_reward_contact_energy += infos['reward_contact_energy'].unsqueeze(1)
+
             # Update episode-based reward component meters on episode end
             if len(self.done_indices) > 0:
+                # Main reward components
                 self.game_reward_rb.update(self.current_reward_rb[self.done_indices])
                 self.game_reward_ro.update(self.current_reward_ro[self.done_indices])
                 self.game_reward_rig.update(self.current_reward_rig[self.done_indices])
                 self.game_reward_rcg.update(self.current_reward_rcg[self.done_indices])
+
+                # rb sub-rewards
+                self.game_reward_rp.update(self.current_reward_rp[self.done_indices])
+                self.game_reward_rr.update(self.current_reward_rr[self.done_indices])
+                self.game_reward_rpv.update(self.current_reward_rpv[self.done_indices])
+                self.game_reward_rrv.update(self.current_reward_rrv[self.done_indices])
+                self.game_reward_energy.update(self.current_reward_energy[self.done_indices])
+
+                # ro sub-rewards
+                self.game_reward_rop.update(self.current_reward_rop[self.done_indices])
+                self.game_reward_ror.update(self.current_reward_ror[self.done_indices])
+                self.game_reward_ropv.update(self.current_reward_ropv[self.done_indices])
+                self.game_reward_rorv.update(self.current_reward_rorv[self.done_indices])
+                self.game_reward_obj_energy.update(self.current_reward_obj_energy[self.done_indices])
+
+                # rcg sub-rewards
+                self.game_reward_rcg_hand.update(self.current_reward_rcg_hand[self.done_indices])
+                self.game_reward_rcg_other.update(self.current_reward_rcg_other[self.done_indices])
+                self.game_reward_rcg_all.update(self.current_reward_rcg_all[self.done_indices])
+                self.game_reward_contact_energy.update(self.current_reward_contact_energy[self.done_indices])
 
             not_dones = 1.0 - self.dones.float()
 
@@ -202,10 +286,31 @@ class InterMimicAgent(common_agent.CommonAgent):
             self.current_lengths = self.current_lengths * not_dones
 
             # Reset reward components for completed episodes
+            # Main reward components
             self.current_reward_rb = self.current_reward_rb * not_dones.unsqueeze(1)
             self.current_reward_ro = self.current_reward_ro * not_dones.unsqueeze(1)
             self.current_reward_rig = self.current_reward_rig * not_dones.unsqueeze(1)
             self.current_reward_rcg = self.current_reward_rcg * not_dones.unsqueeze(1)
+
+            # rb sub-rewards
+            self.current_reward_rp = self.current_reward_rp * not_dones.unsqueeze(1)
+            self.current_reward_rr = self.current_reward_rr * not_dones.unsqueeze(1)
+            self.current_reward_rpv = self.current_reward_rpv * not_dones.unsqueeze(1)
+            self.current_reward_rrv = self.current_reward_rrv * not_dones.unsqueeze(1)
+            self.current_reward_energy = self.current_reward_energy * not_dones.unsqueeze(1)
+
+            # ro sub-rewards
+            self.current_reward_rop = self.current_reward_rop * not_dones.unsqueeze(1)
+            self.current_reward_ror = self.current_reward_ror * not_dones.unsqueeze(1)
+            self.current_reward_ropv = self.current_reward_ropv * not_dones.unsqueeze(1)
+            self.current_reward_rorv = self.current_reward_rorv * not_dones.unsqueeze(1)
+            self.current_reward_obj_energy = self.current_reward_obj_energy * not_dones.unsqueeze(1)
+
+            # rcg sub-rewards
+            self.current_reward_rcg_hand = self.current_reward_rcg_hand * not_dones.unsqueeze(1)
+            self.current_reward_rcg_other = self.current_reward_rcg_other * not_dones.unsqueeze(1)
+            self.current_reward_rcg_all = self.current_reward_rcg_all * not_dones.unsqueeze(1)
+            self.current_reward_contact_energy = self.current_reward_contact_energy * not_dones.unsqueeze(1)
             
             if (self.vec_env.env.task.viewer):
                 self._amp_debug(infos)
@@ -520,11 +625,33 @@ class InterMimicAgent(common_agent.CommonAgent):
     
     def _record_train_batch_info(self, batch_dict, train_info):
         super()._record_train_batch_info(batch_dict, train_info)
+        zero_tensor = torch.zeros(self.value_size, device=self.ppo_device)
+
         # Store episode-based reward component means
-        train_info['reward_rb'] = self.game_reward_rb.get_mean() if self.game_reward_rb.current_size > 0 else torch.zeros(self.value_size, device=self.ppo_device)
-        train_info['reward_ro'] = self.game_reward_ro.get_mean() if self.game_reward_ro.current_size > 0 else torch.zeros(self.value_size, device=self.ppo_device)
-        train_info['reward_rig'] = self.game_reward_rig.get_mean() if self.game_reward_rig.current_size > 0 else torch.zeros(self.value_size, device=self.ppo_device)
-        train_info['reward_rcg'] = self.game_reward_rcg.get_mean() if self.game_reward_rcg.current_size > 0 else torch.zeros(self.value_size, device=self.ppo_device)
+        train_info['reward_rb'] = self.game_reward_rb.get_mean() if self.game_reward_rb.current_size > 0 else zero_tensor
+        train_info['reward_ro'] = self.game_reward_ro.get_mean() if self.game_reward_ro.current_size > 0 else zero_tensor
+        train_info['reward_rig'] = self.game_reward_rig.get_mean() if self.game_reward_rig.current_size > 0 else zero_tensor
+        train_info['reward_rcg'] = self.game_reward_rcg.get_mean() if self.game_reward_rcg.current_size > 0 else zero_tensor
+
+        # rb sub-rewards
+        train_info['reward_rp'] = self.game_reward_rp.get_mean() if self.game_reward_rp.current_size > 0 else zero_tensor
+        train_info['reward_rr'] = self.game_reward_rr.get_mean() if self.game_reward_rr.current_size > 0 else zero_tensor
+        train_info['reward_rpv'] = self.game_reward_rpv.get_mean() if self.game_reward_rpv.current_size > 0 else zero_tensor
+        train_info['reward_rrv'] = self.game_reward_rrv.get_mean() if self.game_reward_rrv.current_size > 0 else zero_tensor
+        train_info['reward_energy'] = self.game_reward_energy.get_mean() if self.game_reward_energy.current_size > 0 else zero_tensor
+
+        # ro sub-rewards
+        train_info['reward_rop'] = self.game_reward_rop.get_mean() if self.game_reward_rop.current_size > 0 else zero_tensor
+        train_info['reward_ror'] = self.game_reward_ror.get_mean() if self.game_reward_ror.current_size > 0 else zero_tensor
+        train_info['reward_ropv'] = self.game_reward_ropv.get_mean() if self.game_reward_ropv.current_size > 0 else zero_tensor
+        train_info['reward_rorv'] = self.game_reward_rorv.get_mean() if self.game_reward_rorv.current_size > 0 else zero_tensor
+        train_info['reward_obj_energy'] = self.game_reward_obj_energy.get_mean() if self.game_reward_obj_energy.current_size > 0 else zero_tensor
+
+        # rcg sub-rewards
+        train_info['reward_rcg_hand'] = self.game_reward_rcg_hand.get_mean() if self.game_reward_rcg_hand.current_size > 0 else zero_tensor
+        train_info['reward_rcg_other'] = self.game_reward_rcg_other.get_mean() if self.game_reward_rcg_other.current_size > 0 else zero_tensor
+        train_info['reward_rcg_all'] = self.game_reward_rcg_all.get_mean() if self.game_reward_rcg_all.current_size > 0 else zero_tensor
+        train_info['reward_contact_energy'] = self.game_reward_contact_energy.get_mean() if self.game_reward_contact_energy.current_size > 0 else zero_tensor
         return
     
     def get_cpu_usage(self):
@@ -562,11 +689,35 @@ class InterMimicAgent(common_agent.CommonAgent):
         self.writer.add_scalar('usage/cpu_memory', self.get_cpu_memory_usage(), frame)
         self.writer.add_scalar('usage/gpu_memory', self.get_gpu_memory_usage(), frame)
 
+        # Helper function to extract scalar from tensor
+        def to_scalar(t):
+            return t[0].item() if torch.is_tensor(t) else t
+
         # Extract episode-based reward component values (convert tensor to scalar)
-        reward_rb = train_info['reward_rb'][0].item() if torch.is_tensor(train_info['reward_rb']) else train_info['reward_rb']
-        reward_ro = train_info['reward_ro'][0].item() if torch.is_tensor(train_info['reward_ro']) else train_info['reward_ro']
-        reward_rig = train_info['reward_rig'][0].item() if torch.is_tensor(train_info['reward_rig']) else train_info['reward_rig']
-        reward_rcg = train_info['reward_rcg'][0].item() if torch.is_tensor(train_info['reward_rcg']) else train_info['reward_rcg']
+        reward_rb = to_scalar(train_info['reward_rb'])
+        reward_ro = to_scalar(train_info['reward_ro'])
+        reward_rig = to_scalar(train_info['reward_rig'])
+        reward_rcg = to_scalar(train_info['reward_rcg'])
+
+        # rb sub-rewards
+        reward_rp = to_scalar(train_info['reward_rp'])
+        reward_rr = to_scalar(train_info['reward_rr'])
+        reward_rpv = to_scalar(train_info['reward_rpv'])
+        reward_rrv = to_scalar(train_info['reward_rrv'])
+        reward_energy = to_scalar(train_info['reward_energy'])
+
+        # ro sub-rewards
+        reward_rop = to_scalar(train_info['reward_rop'])
+        reward_ror = to_scalar(train_info['reward_ror'])
+        reward_ropv = to_scalar(train_info['reward_ropv'])
+        reward_rorv = to_scalar(train_info['reward_rorv'])
+        reward_obj_energy = to_scalar(train_info['reward_obj_energy'])
+
+        # rcg sub-rewards
+        reward_rcg_hand = to_scalar(train_info['reward_rcg_hand'])
+        reward_rcg_other = to_scalar(train_info['reward_rcg_other'])
+        reward_rcg_all = to_scalar(train_info['reward_rcg_all'])
+        reward_contact_energy = to_scalar(train_info['reward_contact_energy'])
 
         # Log reward components to TensorBoard
         self.writer.add_scalar('rewards/rb', reward_rb, frame)
@@ -579,10 +730,28 @@ class InterMimicAgent(common_agent.CommonAgent):
             mean_reward = self.game_rewards.get_mean()[0].item() if self.game_rewards.current_size > 0 else 0.0
             wandb.log({
                 'rewards/mean_reward': mean_reward,
+                # Main reward components
                 'rewards/rb': reward_rb,
                 'rewards/ro': reward_ro,
                 'rewards/rig': reward_rig,
                 'rewards/rcg': reward_rcg,
+                # rb sub-rewards (humanoid)
+                'rewards/rb/rp': reward_rp,
+                'rewards/rb/rr': reward_rr,
+                'rewards/rb/rpv': reward_rpv,
+                'rewards/rb/rrv': reward_rrv,
+                'rewards/rb/energy': reward_energy,
+                # ro sub-rewards (object)
+                'rewards/ro/rop': reward_rop,
+                'rewards/ro/ror': reward_ror,
+                'rewards/ro/ropv': reward_ropv,
+                'rewards/ro/rorv': reward_rorv,
+                'rewards/ro/obj_energy': reward_obj_energy,
+                # rcg sub-rewards (contact)
+                'rewards/rcg/rcg_hand': reward_rcg_hand,
+                'rewards/rcg/rcg_other': reward_rcg_other,
+                'rewards/rcg/rcg_all': reward_rcg_all,
+                'rewards/rcg/contact_energy': reward_contact_energy,
                 'frame': frame,
             })
 
