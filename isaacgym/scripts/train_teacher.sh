@@ -14,6 +14,7 @@ python -m intermimic.run \
     --output checkpoints \
     --experiment intermimic_teacher \
     --num_envs 2048 \
+    --dataSub sub2 \
     --wandb \
     --wandb_project intermimic \
     --wandb_name teacher_tmp
