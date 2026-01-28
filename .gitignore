@@ -1,0 +1,11 @@
+__pycache__/
+wandb/
+# isaaclab/
+isaacgym/assets/
+isaacgym/docs/
+isaacgym/licenses/
+isaacgym/python/
+isaacgym/docker/
+checkpoints/
+
+*.pt

@@ -221,6 +221,8 @@ def get_args(benchmark=False):
             "help": "Display the dataset"},
         {"name": "--init_vel", "action": "store_true", "default": False,
             "help": "Init the object velocity at the first frame"},
+        {"name": "--dataSub", "type": str, "default": "",
+            "help": "Data subdirectory to use"},
         {"name": "--save_images", "action": "store_true", "default": False,
             "help": "save images for viewer"},
         {"name": "--num_envs", "type": int, "default": 0,
@@ -252,7 +254,15 @@ def get_args(benchmark=False):
             "help": "Apply additional PyTorch settings for more deterministic behaviour"},
         {"name": "--output_path", "type": str, "default": "output/", "help": "Specify output directory"},
         {"name": "--llc_checkpoint", "type": str, "default": "",
-            "help": "Path to the saved weights for the low-level controller of an HRL agent."}]
+            "help": "Path to the saved weights for the low-level controller of an HRL agent."},
+        {"name": "--wandb", "action": "store_true", "default": False,
+            "help": "Enable Weights & Biases logging"},
+        {"name": "--wandb_project", "type": str, "default": "intermimic",
+            "help": "Weights & Biases project name"},
+        {"name": "--wandb_entity", "type": str, "default": None,
+            "help": "Weights & Biases entity (username or team)"},
+        {"name": "--wandb_name", "type": str, "default": None,
+            "help": "Weights & Biases run name"}]
 
     if benchmark:
         custom_parameters += [{"name": "--num_proc", "type": int, "default": 1, "help": "Number of child processes to launch"},

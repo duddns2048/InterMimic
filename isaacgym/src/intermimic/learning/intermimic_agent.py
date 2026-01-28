@@ -44,6 +44,12 @@ from . import common_agent
 
 from tensorboardX import SummaryWriter
 
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+
 class InterMimicAgent(common_agent.CommonAgent):
     def __init__(self, base_name, config):
         super().__init__(base_name, config)
@@ -69,6 +75,18 @@ class InterMimicAgent(common_agent.CommonAgent):
         batch_shape = self.experience_buffer.obs_base_shape
         self.experience_buffer.tensor_dict['rand_action_mask'] = torch.zeros(batch_shape, dtype=torch.float32, device=self.ppo_device)
         self.tensor_list += ['amp_obs', 'rand_action_mask']
+
+        # Episode-based reward component tracking (same shape as current_rewards)
+        self.current_reward_rb = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_ro = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_rig = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+        self.current_reward_rcg = torch.zeros((self.num_actors, self.value_size), dtype=torch.float32, device=self.ppo_device)
+
+        # AverageMeters for episode-based reward components
+        self.game_reward_rb = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_ro = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_rig = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
+        self.game_reward_rcg = torch_ext.AverageMeter(self.value_size, self.games_to_track).to(self.ppo_device)
         return
     
     def set_eval(self):
@@ -164,10 +182,30 @@ class InterMimicAgent(common_agent.CommonAgent):
             self.game_lengths.update(self.current_lengths[self.done_indices])
             self.algo_observer.process_infos(infos, self.done_indices)
 
+            # Accumulate reward components (episode-based, like current_rewards)
+            if 'reward_rb' in infos:
+                self.current_reward_rb += infos['reward_rb'].unsqueeze(1)
+                self.current_reward_ro += infos['reward_ro'].unsqueeze(1)
+                self.current_reward_rig += infos['reward_rig'].unsqueeze(1)
+                self.current_reward_rcg += infos['reward_rcg'].unsqueeze(1)
+
+            # Update episode-based reward component meters on episode end
+            if len(self.done_indices) > 0:
+                self.game_reward_rb.update(self.current_reward_rb[self.done_indices])
+                self.game_reward_ro.update(self.current_reward_ro[self.done_indices])
+                self.game_reward_rig.update(self.current_reward_rig[self.done_indices])
+                self.game_reward_rcg.update(self.current_reward_rcg[self.done_indices])
+
             not_dones = 1.0 - self.dones.float()
 
             self.current_rewards = self.current_rewards * not_dones.unsqueeze(1)
             self.current_lengths = self.current_lengths * not_dones
+
+            # Reset reward components for completed episodes
+            self.current_reward_rb = self.current_reward_rb * not_dones.unsqueeze(1)
+            self.current_reward_ro = self.current_reward_ro * not_dones.unsqueeze(1)
+            self.current_reward_rig = self.current_reward_rig * not_dones.unsqueeze(1)
+            self.current_reward_rcg = self.current_reward_rcg * not_dones.unsqueeze(1)
             
             if (self.vec_env.env.task.viewer):
                 self._amp_debug(infos)
@@ -482,6 +520,11 @@ class InterMimicAgent(common_agent.CommonAgent):
     
     def _record_train_batch_info(self, batch_dict, train_info):
         super()._record_train_batch_info(batch_dict, train_info)
+        # Store episode-based reward component means
+        train_info['reward_rb'] = self.game_reward_rb.get_mean() if self.game_reward_rb.current_size > 0 else torch.zeros(self.value_size, device=self.ppo_device)
+        train_info['reward_ro'] = self.game_reward_ro.get_mean() if self.game_reward_ro.current_size > 0 else torch.zeros(self.value_size, device=self.ppo_device)
+        train_info['reward_rig'] = self.game_reward_rig.get_mean() if self.game_reward_rig.current_size > 0 else torch.zeros(self.value_size, device=self.ppo_device)
+        train_info['reward_rcg'] = self.game_reward_rcg.get_mean() if self.game_reward_rcg.current_size > 0 else torch.zeros(self.value_size, device=self.ppo_device)
         return
     
     def get_cpu_usage(self):
@@ -505,7 +548,7 @@ class InterMimicAgent(common_agent.CommonAgent):
         self.writer.add_scalar('performance/play_time', train_info['play_time'], frame)
         self.writer.add_scalar('losses/a_loss', torch_ext.mean_list(train_info['actor_loss']).item(), frame)
         self.writer.add_scalar('losses/c_loss', torch_ext.mean_list(train_info['critic_loss']).item(), frame)
-        
+
         self.writer.add_scalar('losses/bounds_loss', torch_ext.mean_list(train_info['b_loss']).item(), frame)
         self.writer.add_scalar('losses/entropy', torch_ext.mean_list(train_info['entropy']).item(), frame)
         self.writer.add_scalar('info/last_lr', train_info['last_lr'][-1] * train_info['lr_mul'][-1], frame)
@@ -518,5 +561,29 @@ class InterMimicAgent(common_agent.CommonAgent):
         self.writer.add_scalar('usage/gpu', self.get_gpu_usage(), frame)
         self.writer.add_scalar('usage/cpu_memory', self.get_cpu_memory_usage(), frame)
         self.writer.add_scalar('usage/gpu_memory', self.get_gpu_memory_usage(), frame)
+
+        # Extract episode-based reward component values (convert tensor to scalar)
+        reward_rb = train_info['reward_rb'][0].item() if torch.is_tensor(train_info['reward_rb']) else train_info['reward_rb']
+        reward_ro = train_info['reward_ro'][0].item() if torch.is_tensor(train_info['reward_ro']) else train_info['reward_ro']
+        reward_rig = train_info['reward_rig'][0].item() if torch.is_tensor(train_info['reward_rig']) else train_info['reward_rig']
+        reward_rcg = train_info['reward_rcg'][0].item() if torch.is_tensor(train_info['reward_rcg']) else train_info['reward_rcg']
+
+        # Log reward components to TensorBoard
+        self.writer.add_scalar('rewards/rb', reward_rb, frame)
+        self.writer.add_scalar('rewards/ro', reward_ro, frame)
+        self.writer.add_scalar('rewards/rig', reward_rig, frame)
+        self.writer.add_scalar('rewards/rcg', reward_rcg, frame)
+
+        # Log to wandb
+        if WANDB_AVAILABLE and wandb.run is not None:
+            mean_reward = self.game_rewards.get_mean()[0].item() if self.game_rewards.current_size > 0 else 0.0
+            wandb.log({
+                'rewards/mean_reward': mean_reward,
+                'rewards/rb': reward_rb,
+                'rewards/ro': reward_ro,
+                'rewards/rig': reward_rig,
+                'rewards/rcg': reward_rcg,
+                'frame': frame,
+            })
 
         return

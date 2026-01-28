@@ -11,5 +11,5 @@ python -m intermimic.run \
     --cfg_env isaacgym/src/intermimic/data/cfg/omomo_test.yaml \
     --cfg_train isaacgym/src/intermimic/data/cfg/train/rlg/omomo.yaml \
     --test \
-    --checkpoint checkpoints/smplx_teachers/sub2.pth \
+    --checkpoint checkpoints/ckpt/sub2.pth \
     --num_envs 16

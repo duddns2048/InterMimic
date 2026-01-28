@@ -11,4 +11,8 @@ python -m intermimic.run_distill \
     --cfg_env isaacgym/src/intermimic/data/cfg/omomo_all.yaml \
     --cfg_train isaacgym/src/intermimic/data/cfg/train/rlg/omomo_all.yaml \
     --headless \
-    --output checkpoints
+    --output checkpoints \
+    --wandb \
+    --wandb_project intermimic \
+    --wandb_name student_mlp \
+    "$@"

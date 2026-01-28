@@ -182,11 +182,12 @@ class CommonAgent(a2c_continuous.A2CAgent):
 
                 if self.save_freq > 0:
                     if (epoch_num % self.save_freq == 0):
-                        self.save(model_output_file)
+                        int_model_output_file = model_output_file + '_' + str(epoch_num).zfill(8)
+                        self.save(int_model_output_file)
 
                         if (self._save_intermediate):
-                            int_model_output_file = model_output_file + '_' + str(epoch_num).zfill(8)
-                            self.save(int_model_output_file)
+                            latest_model_output_file = model_output_file + '_' 'latest'
+                            self.save(latest_model_output_file)
 
                 if epoch_num > self.max_epochs:
                     self.save(model_output_file)

@@ -41,6 +41,12 @@ import numpy as np
 import copy
 import torch
 
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+
 from .learning import intermimic_agent_distill
 from .learning import intermimic_players_distill
 from .learning import intermimic_models
@@ -82,8 +88,9 @@ def create_rlgpu_env(**kwargs):
 
 
 class RLGPUAlgoObserver(AlgoObserver):
-    def __init__(self, use_successes=True):
+    def __init__(self, use_successes=True, use_wandb=False):
         self.use_successes = use_successes
+        self.use_wandb = use_wandb and WANDB_AVAILABLE
         return
 
     def after_init(self, algo):
@@ -112,6 +119,15 @@ class RLGPUAlgoObserver(AlgoObserver):
             self.writer.add_scalar('successes/consecutive_successes/mean', mean_con_successes, frame)
             self.writer.add_scalar('successes/consecutive_successes/iter', mean_con_successes, epoch_num)
             self.writer.add_scalar('successes/consecutive_successes/time', mean_con_successes, total_time)
+
+            if self.use_wandb:
+                wandb.log({
+                    'successes/consecutive_successes/mean': mean_con_successes,
+                    'successes/consecutive_successes/iter': mean_con_successes,
+                    'frame': frame,
+                    'epoch': epoch_num,
+                    'total_time': total_time,
+                })
         return
 
 
@@ -202,7 +218,7 @@ def main():
 
     if args.minibatch_size != -1:
         cfg_train['params']['config']['minibatch_size'] = args.minibatch_size
-        
+
     if args.motion_file:
         cfg['env']['motion_file'] = args.motion_file
 
@@ -226,7 +242,7 @@ def main():
 
     if args.save_images:
         cfg['env']['saveImages'] = True
-    
+
     if args.init_vel:
         cfg['env']['initVel'] = True
 
@@ -235,18 +251,44 @@ def main():
 
     if args.ball_size!= 0.:
         cfg['env']['ballSize'] = args.ball_size
-    
+
     # Create default directories for weights and statistics
     cfg_train['params']['config']['train_dir'] = args.output_path
-    
+
+    # Initialize wandb if enabled
+    use_wandb = args.wandb and WANDB_AVAILABLE and args.train
+    if use_wandb:
+        wandb_config = {
+            'env': cfg['env'],
+            'train': cfg_train['params']['config'],
+            'network': cfg_train['params'].get('network', {}),
+            'task': args.task,
+            'num_envs': cfg['env']['numEnvs'],
+            'seed': cfg_train['params']['seed'],
+        }
+        wandb.init(
+            project=args.wandb_project,
+            entity=args.wandb_entity,
+            name=args.wandb_name or cfg_train['params']['config']['name'],
+            config=wandb_config,
+            sync_tensorboard=True,
+        )
+        print(f"[wandb] Initialized: {wandb.run.url}")
+    elif args.wandb and not WANDB_AVAILABLE:
+        print("[wandb] Warning: wandb is not installed. Install with 'pip install wandb'")
+
     vargs = vars(args)
 
-    algo_observer = RLGPUAlgoObserver()
+    algo_observer = RLGPUAlgoObserver(use_wandb=use_wandb)
 
     runner = build_alg_runner(algo_observer)
     runner.load(cfg_train)
     runner.reset()
     runner.run(vargs)
+
+    # Finish wandb run
+    if use_wandb:
+        wandb.finish()
 
     return
 

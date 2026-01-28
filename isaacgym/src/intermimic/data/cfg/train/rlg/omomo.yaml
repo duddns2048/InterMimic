@@ -37,7 +37,7 @@ params:
   load_checkpoint: False
 
   config:
-    name: mimic
+    name: intermimic
     full_experiment_name: smplx
     env_name: rlgpu
     multi_gpu: False
@@ -70,5 +70,5 @@ params:
     seq_len: 4
     bounds_loss_coef: 10
     enable_eps_greedy: False
-    resume_from: checkpoints/smplx_teachers_new/sub2.pth
+    resume_from: None
     save_intermediate: False

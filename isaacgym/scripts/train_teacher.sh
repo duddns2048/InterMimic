@@ -11,4 +11,9 @@ python -m intermimic.run \
     --cfg_env isaacgym/src/intermimic/data/cfg/omomo_train.yaml \
     --cfg_train isaacgym/src/intermimic/data/cfg/train/rlg/omomo.yaml \
     --headless \
-    --output checkpoints
+    --output checkpoints \
+    --experiment intermimic_teacher \
+    --num_envs 2048 \
+    --wandb \
+    --wandb_project intermimic \
+    --wandb_name teacher_tmp
