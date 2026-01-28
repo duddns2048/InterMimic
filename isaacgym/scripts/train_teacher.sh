@@ -14,6 +14,7 @@ python -m intermimic.run \
     --output checkpoints \
     --experiment intermimic_teacher \
     --num_envs 2048 \
+    --motion_file InterAct/OMOMO \
     --dataSub sub2 \
     --wandb \
     --wandb_project intermimic \
