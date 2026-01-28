@@ -243,7 +243,8 @@ def main():
         cfg['env']['initVel'] = True
 
     if args.dataSub:
-        cfg['env']['dataSub'] = args.dataSub
+        dataSub = []
+        cfg['env']['dataSub'] = dataSub.append(args.dataSub)
 
     if args.frames_scale!= 0.:
         cfg['env']['dataFramesScale'] = args.frames_scale
