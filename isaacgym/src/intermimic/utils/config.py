@@ -262,7 +262,9 @@ def get_args(benchmark=False):
         {"name": "--wandb_entity", "type": str, "default": None,
             "help": "Weights & Biases entity (username or team)"},
         {"name": "--wandb_name", "type": str, "default": None,
-            "help": "Weights & Biases run name"}]
+            "help": "Weights & Biases run name"},
+        {"name": "--resume_from", "type": str, "default": "",
+            "help": "Path to checkpoint to resume training from"}]
 
     if benchmark:
         custom_parameters += [{"name": "--num_proc", "type": int, "default": 1, "help": "Number of child processes to launch"},
