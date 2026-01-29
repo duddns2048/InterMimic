@@ -52,9 +52,9 @@ def warn_task_name():
 
 
 def set_seed(seed, torch_deterministic=False):
-    if seed == -1 and torch_deterministic:
+    if seed == -1:
         seed = 42
-    elif seed == -1:
+    elif seed == 0:
         seed = np.random.randint(0, 10000)
     print("Setting seed: {}".format(seed))
 

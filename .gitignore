@@ -9,3 +9,4 @@ isaacgym/docker/
 checkpoints/
 
 *.pt
+*.zip
