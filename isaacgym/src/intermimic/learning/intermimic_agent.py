@@ -752,6 +752,15 @@ class InterMimicAgent(common_agent.CommonAgent):
                 'rewards/rcg/rcg_other': reward_rcg_other,
                 'rewards/rcg/rcg_all': reward_rcg_all,
                 'rewards/rcg/contact_energy': reward_contact_energy,
+                # Losses (iteration-based mean)
+                'losses/actor_loss': torch_ext.mean_list(train_info['actor_loss']).item(),
+                'losses/critic_loss': torch_ext.mean_list(train_info['critic_loss']).item(),
+                'losses/bounds_loss': torch_ext.mean_list(train_info['b_loss']).item(),
+                'losses/entropy': torch_ext.mean_list(train_info['entropy']).item(),
+                # Info
+                'info/kl': torch_ext.mean_list(train_info['kl']).item(),
+                'info/clip_frac': torch_ext.mean_list(train_info['actor_clip_frac']).item(),
+                'info/lr': train_info['last_lr'][-1] * train_info['lr_mul'][-1],
                 'frame': frame,
             })
 
