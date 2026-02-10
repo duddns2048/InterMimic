@@ -34,6 +34,7 @@ from rl_games.algos_torch import torch_ext
 from rl_games.algos_torch import central_value
 from rl_games.algos_torch.running_mean_std import RunningMeanStd
 from rl_games.common import a2c_common
+import wandb
 
 import torch
 from torch import optim
@@ -156,7 +157,34 @@ class CommonAgent(a2c_continuous.A2CAgent):
                 if self.print_stats:
                     fps_step = curr_frames / scaled_play_time
                     fps_total = curr_frames / scaled_time
-                    print("epoch_num:{}".format(epoch_num), "mean_rewards:{}".format(self._get_mean_rewards()), f'fps step: {fps_step:.1f} fps total: {fps_total:.1f}')
+                    print("epoch_num:{}".format(epoch_num), "mean_rewards:{}".format(self._get_mean_rewards()), f'fps step: {fps_step:.1f} fps total: {fps_total:.1f}', f'total time: {sum_time:.1f}')
+
+                    # Build wandb log dict with reward components
+                    log_dict = {
+                        "epoch_num": epoch_num,
+                        "mean_rewards": self._get_mean_rewards(),
+                        "info/play_time": train_info['play_time'],
+                        "info/update_time": train_info['update_time'],
+                        "info/total_time": train_info['total_time'],
+                        "info/actor_loss": torch_ext.mean_list(train_info['actor_loss']).item(),
+                        "info/critic_loss": torch_ext.mean_list(train_info['critic_loss']).item(),
+                        "info/b_loss": torch_ext.mean_list(train_info['b_loss']).item(),
+                        "info/entropy": torch_ext.mean_list(train_info['entropy']).item(),
+                        
+                    }
+
+                    # Add reward component means if available
+                    if hasattr(self, 'game_reward_components'):
+                        for key, rms in self.game_reward_components.items():
+                            mean_val = rms.get_mean()
+                            if isinstance(mean_val, torch.Tensor):
+                                mean_val = mean_val.item()
+                            if 'progress' in key:
+                                log_dict[f"info/{key}"] = mean_val
+                            else:
+                                log_dict[f"reward_components/{key}"] = mean_val
+
+                    wandb.log(log_dict)
 
                 self.writer.add_scalar('performance/total_fps', curr_frames / scaled_time, frame)
                 self.writer.add_scalar('performance/step_fps', curr_frames / scaled_play_time, frame)

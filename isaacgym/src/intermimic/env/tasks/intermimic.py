@@ -765,13 +765,26 @@ class InterMimic(Humanoid_SMPLX):
                          body_pos.reshape(body_pos.shape[0],-1), body_rot.reshape(body_rot.shape[0],-1), body_vel.reshape(body_vel.shape[0],-1), body_rot_vel.reshape(body_rot_vel.shape[0],-1),
                          target_states, ig, contact, target_contact), dim=-1)
         return obs
-    
+
+    def _compute_progress_metrics(self):
+        if self.reset_buf.sum() == 0:
+            self.extras['contact_progress'] = None
+            self.extras['episode_progress'] = None
+            return
+        reset_ids = torch.where(self.reset_buf == 1)[0]
+        elapsed_frames = (self.progress_buf[reset_ids] - self.start_times[reset_ids]).float()
+        max_ep_length = self.max_episode_length[self.data_id[reset_ids]].float()
+        episode_progress = elapsed_frames / max_ep_length
+        return episode_progress  # shape: [num_reset_envs]
+
     def _compute_reset(self):
         self.reset_buf[:], self._terminate_buf[:] = self.compute_hoi_reset(self.reset_buf, self.progress_buf, self.obs_buf,
                                                                            self._rigid_body_pos, self.max_episode_length[self.data_id],
                                                                            self._enable_early_termination, self._termination_heights, self.start_times,
                                                                            self.rollout_length, self.kinematic_reset, torch.any(self.contact_reset > 10, dim=-1)
                                                                           )
+        # ========= Episode Progress =========
+        self.extras['episode_progress'] = self._compute_progress_metrics()
 
         # Evaluation metrics update (assumes stateInit is "Start", so start_times is 0)
         if self.enable_evaluation:
@@ -884,32 +897,14 @@ class InterMimic(Humanoid_SMPLX):
         rcg, contact_reset, rcg_components = self.compute_cg_reward(self.reward_weights)
         self.rew_buf[:] = rb * ro * rig * rcg
 
-        # Store reward components for logging (per-environment tensors for episode-based tracking)
-        self.extras["reward_rb"] = rb
-        self.extras["reward_ro"] = ro
-        self.extras["reward_rig"] = rig
-        self.extras["reward_rcg"] = rcg
 
-        # Store sub-reward components for logging
-        # rb components: rp, rr, rpv, rrv, energy
-        self.extras["reward_rp"] = rb_components['rp']
-        self.extras["reward_rr"] = rb_components['rr']
-        self.extras["reward_rpv"] = rb_components['rpv']
-        self.extras["reward_rrv"] = rb_components['rrv']
-        self.extras["reward_energy"] = rb_components['energy']
-
-        # ro components: rop, ror, ropv, rorv, obj_energy
-        self.extras["reward_rop"] = ro_components['rop']
-        self.extras["reward_ror"] = ro_components['ror']
-        self.extras["reward_ropv"] = ro_components['ropv']
-        self.extras["reward_rorv"] = ro_components['rorv']
-        self.extras["reward_obj_energy"] = ro_components['obj_energy']
-
-        # rcg components: rcg_hand, rcg_other, rcg_all, contact_energy
-        self.extras["reward_rcg_hand"] = rcg_components['rcg_hand']
-        self.extras["reward_rcg_other"] = rcg_components['rcg_other']
-        self.extras["reward_rcg_all"] = rcg_components['rcg_all']
-        self.extras["reward_contact_energy"] = rcg_components['contact_energy']
+        self.extras["reward_components"] = {
+            'rb': rb,
+            'ro': ro,
+            'rig': rig,
+            'rcg': rcg,
+        }
+        
         kinematic_reset = torch.logical_or(human_reset, object_reset)
         self.contact_reset = (self.contact_reset + contact_reset) * contact_reset
         self.kinematic_reset = torch.logical_or(ig_reset, kinematic_reset)
@@ -988,6 +983,10 @@ class InterMimic(Humanoid_SMPLX):
 
         # Return sub-rewards for logging
         rb_components = {'rp': rp, 'rr': rr, 'rpv': rpv, 'rrv': rrv, 'energy': energy}
+
+        self.extras['reward_human_components'] = {
+            'rp': rp, 'rr': rr, 'rpv': rpv, 'rrv': rrv, 'energy': energy}
+
         return rb, human_reset, key_pos, ref_key_pos, rb_components
     
     def compute_obj_reward(self, w):
@@ -1064,6 +1063,10 @@ class InterMimic(Humanoid_SMPLX):
 
         # Return sub-rewards for logging
         ro_components = {'rop': rop, 'ror': ror, 'ropv': ropv, 'rorv': rorv, 'obj_energy': obj_energy}
+
+        self.extras['reward_object_components'] = {
+            'rop': rop, 'ror': ror, 'ropv': ropv, 'rorv': rorv, 'obj_energy': obj_energy}
+
         return ro, object_reset, obj_points, ref_obj_points, ro_components
     
     def compute_ig_reward(self, w, key_pos, ref_key_pos, obj_points, ref_obj_points):
@@ -1134,6 +1137,10 @@ class InterMimic(Humanoid_SMPLX):
 
         # Return sub-rewards for logging
         rcg_components = {'rcg_hand': rcg_hand, 'rcg_other': rcg_other, 'rcg_all': rcg_all, 'contact_energy': contact_energy}
+
+        self.extras['reward_contact_components'] = {
+            'rcg_hand': rcg_hand, 'rcg_other': rcg_other,
+            'rcg_all': rcg_all, 'contact_energy': contact_energy}
         return rcg, contact_reset, rcg_components
     
     def play_dataset_step(self, time):
