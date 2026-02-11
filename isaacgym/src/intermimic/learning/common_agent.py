@@ -158,12 +158,16 @@ class CommonAgent(a2c_continuous.A2CAgent):
                     fps_step = curr_frames / scaled_play_time
                     fps_total = curr_frames / scaled_time
                     print("epoch_num:{}".format(epoch_num), "mean_rewards:{}".format(self._get_mean_rewards()), f'fps step: {fps_step:.1f} fps total: {fps_total:.1f}', f'total time: {sum_time:.1f}')
-
+                    print(f"update time: {train_info['update_time']:.1f}", f"play time:{train_info['play_time']:.1f}= env_reset({train_info['play_time_env_reset']:.1f})+get_action({train_info['play_time_get_action_value']:.1f})+env_step({train_info['play_time_env_step']:.1f})+after_env_step({train_info['play_time_after_env_step']:.1f})")
                     # Build wandb log dict with reward components
                     log_dict = {
                         "epoch_num": epoch_num,
                         "mean_rewards": self._get_mean_rewards(),
                         "info/play_time": train_info['play_time'],
+                        "info/play_time_env_reset": train_info['play_time_env_reset'],
+                        "info/play_time_get_action_value": train_info['play_time_get_action_value'],
+                        "info/play_time_env_step": train_info['play_time_env_step'],
+                        "info/play_time_after_env_step": train_info['play_time_after_env_step'],
                         "info/update_time": train_info['update_time'],
                         "info/total_time": train_info['total_time'],
                         "info/actor_loss": torch_ext.mean_list(train_info['actor_loss']).item(),

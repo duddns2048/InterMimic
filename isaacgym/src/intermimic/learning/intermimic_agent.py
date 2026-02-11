@@ -134,10 +134,16 @@ class InterMimicAgent(common_agent.CommonAgent):
         epinfos = []
         update_list = self.update_list
 
+        play_time_env_reset= 0
+        play_time_get_action_value= 0
+        play_time_env_step= 0
+        play_time_after_env_step= 0
+
         for n in range(self.horizon_length):
-
+            play_time_env_reset_start = time.time()
             self.obs = self.env_reset(self.done_indices)
-
+            play_time_env_reset_end = time.time()
+            play_time_get_action_value_start = time.time()
             self.experience_buffer.update_data('obses', n, self.obs['obs'])
 
             if self.use_action_masks:
@@ -145,6 +151,8 @@ class InterMimicAgent(common_agent.CommonAgent):
                 res_dict = self.get_masked_action_values(self.obs, masks)
             else:
                 res_dict = self.get_action_values(self.obs, self._rand_action_probs)
+            play_time_get_action_value_end = time.time()
+            play_time_env_step_start = time.time()
 
             for k in update_list:
                 self.experience_buffer.update_data(k, n, res_dict[k]) 
@@ -153,6 +161,8 @@ class InterMimicAgent(common_agent.CommonAgent):
                 self.experience_buffer.update_data('states', n, self.obs['states'])
 
             self.obs, rewards, self.dones, infos = self.env_step(res_dict['actions'])
+            play_time_env_step_end = time.time()
+            play_time_after_env_step_start = time.time()
 
             invalid_obs = ~torch.isfinite(self.obs['obs'])  # True where obs is NaN or infinite
             invalid_batches = torch.any(invalid_obs, dim=1)  # Check if any invalid number in each batch (B, N)
@@ -215,6 +225,12 @@ class InterMimicAgent(common_agent.CommonAgent):
                 self._amp_debug(infos)
                 
             self.done_indices = self.done_indices[:, 0]
+            play_time_after_env_step_end = time.time()
+
+            play_time_env_reset+= play_time_env_reset_end - play_time_env_reset_start
+            play_time_get_action_value+= play_time_get_action_value_end - play_time_get_action_value_start
+            play_time_env_step+= play_time_env_step_end - play_time_env_step_start
+            play_time_after_env_step+= play_time_after_env_step_end - play_time_after_env_step_start
 
         mb_fdones = self.experience_buffer.tensor_dict['dones'].float()
         mb_values = self.experience_buffer.tensor_dict['values']
@@ -228,6 +244,11 @@ class InterMimicAgent(common_agent.CommonAgent):
         batch_dict = self.experience_buffer.get_transformed_list(a2c_common.swap_and_flatten01, self.tensor_list)
         batch_dict['returns'] = a2c_common.swap_and_flatten01(mb_returns)
         batch_dict['played_frames'] = self.batch_size
+
+        batch_dict['play_time_env_reset'] = play_time_env_reset
+        batch_dict['play_time_get_action_value'] = play_time_get_action_value
+        batch_dict['play_time_env_step'] = play_time_env_step
+        batch_dict['play_time_after_env_step'] =play_time_after_env_step
 
         return batch_dict
 
@@ -363,6 +384,11 @@ class InterMimicAgent(common_agent.CommonAgent):
         total_time = update_time_end - play_time_start
 
         train_info['play_time'] = play_time
+        train_info['play_time_env_reset'] = batch_dict['play_time_env_reset']
+        train_info['play_time_get_action_value'] = batch_dict['play_time_get_action_value']
+        train_info['play_time_env_step'] = batch_dict['play_time_env_step']
+        train_info['play_time_after_env_step'] = batch_dict['play_time_after_env_step']
+
         train_info['update_time'] = update_time
         train_info['total_time'] = total_time
         self._record_train_batch_info(batch_dict, train_info)
