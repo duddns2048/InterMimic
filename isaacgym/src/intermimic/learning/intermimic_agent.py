@@ -143,12 +143,12 @@ class InterMimicAgent(common_agent.CommonAgent):
         self.vec_env.env.task.physics_time=0
         self.vec_env.env.task.post_physics_time=0
 
-        self.vec_env.env.task._refresh_sim_tensors_ratio=0
-        self.vec_env.env.task._update_hist_hoi_obs_ratio=0
-        self.vec_env.env.task._compute_hoi_observations_ratio=0
-        self.vec_env.env.task._compute_observations_ratio=0
-        self.vec_env.env.task._compute_reward_ratio=0
-        self.vec_env.env.task._compute_reset_ratio=0
+        self.vec_env.env.task._refresh_sim_tensors_time=0
+        self.vec_env.env.task._update_hist_hoi_obs_time=0
+        self.vec_env.env.task._compute_hoi_observations_time=0
+        self.vec_env.env.task._compute_observations_time=0
+        self.vec_env.env.task._compute_reward_time=0
+        self.vec_env.env.task._compute_reset_time=0
 
         for n in range(self.horizon_length):
             play_time_env_reset_start = time.time()
