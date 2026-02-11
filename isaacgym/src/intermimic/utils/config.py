@@ -263,6 +263,8 @@ def get_args(benchmark=False):
             "help": "Weights & Biases entity (username or team)"},
         {"name": "--wandb_name", "type": str, "default": None,
             "help": "Weights & Biases run name"},
+        {"name": "--wandb_id", "type": str, "default": None,
+            "help": "Weights & Biases run ID to continue logging to an existing run"},
         {"name": "--resume_from", "type": str, "default": "",
             "help": "Path to checkpoint to resume training from"}]
 

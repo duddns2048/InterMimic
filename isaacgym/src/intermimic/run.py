@@ -278,6 +278,8 @@ def main():
             entity=args.wandb_entity,
             name=args.wandb_name or cfg_train['params']['config']['name'],
             config=wandb_config,
+            id=args.wandb_id,
+            resume="must",
         )
         print(f"[wandb] Initialized: {wandb.run.url}")
     elif args.wandb and not WANDB_AVAILABLE:
