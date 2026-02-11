@@ -165,15 +165,15 @@ class CommonAgent(a2c_continuous.A2CAgent):
                     log_dict = {
                         "epoch_num": epoch_num,
                         "mean_rewards": self._get_mean_rewards(),
-                        "info/total_time": train_info['total_time'],
-                        "info/play_time": train_info['play_time'],
-                        "info/update_time": train_info['update_time'],
+                        "time/total_time": train_info['total_time'],
+                        "time/play_time": train_info['play_time'],
+                        "time/update_time": train_info['update_time'],
 
                         "play_time/play_time": train_info['play_time'],
-                        "play_time/play_time_env_reset": train_info['play_time_env_reset'],
-                        "play_time/play_time_get_action_value": train_info['play_time_get_action_value'],
-                        "play_time/play_time_env_step": train_info['play_time_env_step'],
-                        "play_time/play_time_after_env_step": train_info['play_time_after_env_step'],
+                        "play_time/env_reset": train_info['play_time_env_reset'],
+                        "play_time/get_action_value": train_info['play_time_get_action_value'],
+                        "play_time/env_step": train_info['play_time_env_step'],
+                        "play_time/after_env_step": train_info['play_time_after_env_step'],
 
                         "env_step/pre_physics_time": self.vec_env.env.task.pre_physics_time,
                         "env_step/physics_time": self.vec_env.env.task.physics_time,
