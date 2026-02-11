@@ -41,11 +41,7 @@ import numpy as np
 import copy
 import torch
 
-try:
-    import wandb
-    WANDB_AVAILABLE = True
-except ImportError:
-    WANDB_AVAILABLE = False
+import wandb
 
 from .learning import intermimic_agent
 from .learning import intermimic_players
@@ -88,9 +84,9 @@ def create_rlgpu_env(**kwargs):
 
 
 class RLGPUAlgoObserver(AlgoObserver):
-    def __init__(self, use_successes=True, use_wandb=False):
+    def __init__(self, use_successes=True, use_wandb=True):
         self.use_successes = use_successes
-        self.use_wandb = use_wandb and WANDB_AVAILABLE
+        self.use_wandb = use_wandb
         return
 
     def after_init(self, algo):
@@ -260,34 +256,32 @@ def main():
     cfg_train['params']['config']['train_dir'] = args.output_path
 
     # Initialize wandb if enabled
-    use_wandb = args.wandb and WANDB_AVAILABLE and args.train
-    if use_wandb:
-        wandb_config = {
-            'env': cfg['env'],
-            'train': cfg_train['params']['config'],
-            'network': cfg_train['params'].get('network', {}),
-            'task': args.task,
-            'num_envs': cfg['env']['numEnvs'],
-            'seed': cfg_train['params']['seed'],
-            **cfg_train,
-            **cfg
+    wandb_kwargs = {
+        "project": args.wandb_project,
+        "name": cfg_train['params']['config']['name'],
 
-        }
-        wandb.init(
-            project=args.wandb_project,
-            entity=args.wandb_entity,
-            name=args.wandb_name or cfg_train['params']['config']['name'],
-            config=wandb_config,
-            id=args.wandb_id,
-            resume="must",
-        )
-        print(f"[wandb] Initialized: {wandb.run.url}")
-    elif args.wandb and not WANDB_AVAILABLE:
-        print("[wandb] Warning: wandb is not installed. Install with 'pip install wandb'")
+        "config":{
+            "task": args.task,
+            "cfg_env": args.cfg_env,
+            "cfg_train": args.cfg_train,
+            "num_envs": args.num_envs,
+            **cfg,
+            **cfg_train
+        },
+        'env': cfg['env'],
+        'train': cfg_train['params']['config'],
+        'network': cfg_train['params'].get('network', {}),
+        'num_envs': cfg['env']['numEnvs'],
+        'seed': cfg_train['params']['seed'],
+        "id":args.wandb_id,
+        "resume":"must",
+
+    }
+    wandb.init(wandb_kwargs)
 
     vargs = vars(args)
 
-    algo_observer = RLGPUAlgoObserver(use_wandb=use_wandb)
+    algo_observer = RLGPUAlgoObserver()
 
     runner = build_alg_runner(algo_observer)
     runner.load(cfg_train)
@@ -295,8 +289,7 @@ def main():
     runner.run(vargs)
 
     # Finish wandb run
-    if use_wandb:
-        wandb.finish()
+    wandb.finish()
 
     return
 
