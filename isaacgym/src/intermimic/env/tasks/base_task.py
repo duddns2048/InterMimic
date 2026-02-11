@@ -17,7 +17,7 @@ from isaacgym.gymutil import get_property_setter_map, get_property_getter_map, g
 import numpy as np
 import torch
 
-
+import time
 # Base class for RL tasks
 class BaseTask():
 
@@ -114,6 +114,10 @@ class BaseTask():
             self.gym.viewer_camera_look_at(
                 self.viewer, None, cam_pos, cam_target)
 
+        self.pre_physics_time=0
+        self.physics_time=0
+        self.post_physics_time=0
+
     # set gravity based on up axis and return axis index
     def set_sim_params_up_axis(self, sim_params, axis):
         if axis == 'z':
@@ -137,17 +141,27 @@ class BaseTask():
             actions = self.dr_randomizations['actions']['noise_lambda'](actions)
 
         # apply actions
+        pre_physics_time_start = time.time()
         self.pre_physics_step(actions)
+        pre_physics_time_end = time.time()
 
         # step physics and render each frame
+        physics_time_start = time.time()
         self._physics_step()
+        physics_time_end = time.time()
 
         # to fix!
         if self.device == 'cpu':
             self.gym.fetch_results(self.sim, True)
 
         # compute observations, rewards, resets, ...
+        post_physics_time_start = time.time()
         self.post_physics_step()
+        post_physics_time_end = time.time()
+
+        self.pre_physics_time+= pre_physics_time_end - pre_physics_time_start
+        self.physics_time+= physics_time_end - physics_time_start
+        self.post_physics_time+= post_physics_time_end - post_physics_time_start
 
         if self.dr_randomizations.get('observations', None):
             self.obs_buf = self.dr_randomizations['observations']['noise_lambda'](self.obs_buf)

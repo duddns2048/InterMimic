@@ -139,6 +139,10 @@ class InterMimicAgent(common_agent.CommonAgent):
         play_time_env_step= 0
         play_time_after_env_step= 0
 
+        self.vec_env.env.task.pre_physics_time=0
+        self.vec_env.env.task.physics_time=0
+        self.vec_env.env.task.post_physics_time=0
+
         for n in range(self.horizon_length):
             play_time_env_reset_start = time.time()
             self.obs = self.env_reset(self.done_indices)
