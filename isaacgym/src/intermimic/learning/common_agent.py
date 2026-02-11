@@ -173,10 +173,18 @@ class CommonAgent(a2c_continuous.A2CAgent):
                         "play_time/play_time_env_reset": train_info['play_time_env_reset'],
                         "play_time/play_time_get_action_value": train_info['play_time_get_action_value'],
                         "play_time/play_time_env_step": train_info['play_time_env_step'],
-                        "play_time/play_time_env_step/pre_physics_time": self.vec_env.env.task.pre_physics_time,
-                        "play_time/play_time_env_step/physics_time": self.vec_env.env.task.physics_time,
-                        "play_time/play_time_env_step/post_physics_time": self.vec_env.env.task.post_physics_time,
                         "play_time/play_time_after_env_step": train_info['play_time_after_env_step'],
+
+                        "env_step/pre_physics_time": self.vec_env.env.task.pre_physics_time,
+                        "env_step/physics_time": self.vec_env.env.task.physics_time,
+                        "env_step/post_physics_time": self.vec_env.env.task.post_physics_time,
+
+                        "post_physics/_refresh_sim_tensors": self.vec_env.env.task._refresh_sim_tensors_ratio,
+                        "post_physics/_update_hist_hoi_obs": self.vec_env.env.task._update_hist_hoi_obs_ratio,
+                        "post_physics/_compute_hoi_observations": self.vec_env.env.task._compute_hoi_observations_ratio,
+                        "post_physics/_compute_observations": self.vec_env.env.task._compute_observations_ratio,
+                        "post_physics/_compute_reward": self.vec_env.env.task._compute_reward_ratio,
+                        "post_physics/_compute_reset": self.vec_env.env.task._compute_reset_ratio,
 
                         "info/actor_loss": torch_ext.mean_list(train_info['actor_loss']).item(),
                         "info/critic_loss": torch_ext.mean_list(train_info['critic_loss']).item(),

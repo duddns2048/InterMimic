@@ -38,6 +38,7 @@ from isaacgym.torch_utils import *
 
 from .base_task import BaseTask
 
+import time
 
 
 class Humanoid_SMPLX(BaseTask):
@@ -399,14 +400,28 @@ class Humanoid_SMPLX(BaseTask):
 
     def post_physics_step(self):
         self.progress_buf += 1
-                
+        
+        post_physics_time1 = time.time()
         self._refresh_sim_tensors()
+        post_physics_time2 = time.time()
         env_ids = to_torch(np.arange(self.num_envs), device=self.device, dtype=torch.long)
         self._update_hist_hoi_obs()
+        post_physics_time3 = time.time()
         self._compute_hoi_observations()
+        post_physics_time4 = time.time()
         self._compute_observations(env_ids)
+        post_physics_time5 = time.time()
         self._compute_reward(self.actions)
+        post_physics_time6 = time.time()
         self._compute_reset()
+        post_physics_time7 = time.time()
+
+        self._refresh_sim_tensors_time+= post_physics_time2-post_physics_time1
+        self._update_hist_hoi_obs_time+= post_physics_time3-post_physics_time2
+        self._compute_hoi_observations_time+= post_physics_time4-post_physics_time3
+        self._compute_observations_time+= post_physics_time5-post_physics_time4
+        self._compute_reward_time+= post_physics_time6-post_physics_time5
+        self._compute_reset_time+= post_physics_time7-post_physics_time6
 
         self.extras["terminate"] = self._terminate_buf
 

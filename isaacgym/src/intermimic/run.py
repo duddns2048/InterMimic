@@ -265,14 +265,14 @@ def main():
             "cfg_env": args.cfg_env,
             "cfg_train": args.cfg_train,
             "num_envs": args.num_envs,
+            'seed': cfg_train['params']['seed'],
+            'num_envs': cfg['env']['numEnvs'],
             **cfg,
             **cfg_train
         },
         'env': cfg['env'],
         'train': cfg_train['params']['config'],
         'network': cfg_train['params'].get('network', {}),
-        'num_envs': cfg['env']['numEnvs'],
-        'seed': cfg_train['params']['seed'],
         "id":args.wandb_id,
         "resume":"must",
 

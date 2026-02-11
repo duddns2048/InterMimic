@@ -118,6 +118,13 @@ class BaseTask():
         self.physics_time=0
         self.post_physics_time=0
 
+        self._refresh_sim_tensors_time=0
+        self._update_hist_hoi_obs_time=0
+        self._compute_hoi_observations_time=0
+        self._compute_observations_time=0
+        self._compute_reward_time=0
+        self._compute_reset_time=0
+
     # set gravity based on up axis and return axis index
     def set_sim_params_up_axis(self, sim_params, axis):
         if axis == 'z':
