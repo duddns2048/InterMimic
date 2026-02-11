@@ -224,9 +224,9 @@ class CommonAgent(a2c_continuous.A2CAgent):
                         int_model_output_file = model_output_file + '_' + str(epoch_num).zfill(8)
                         self.save(int_model_output_file)
 
-                        if (self._save_intermediate):
-                            latest_model_output_file = model_output_file + '_' 'latest'
-                            self.save(latest_model_output_file)
+                if (self._save_intermediate):
+                    latest_model_output_file = model_output_file + '_' 'latest'
+                    self.save(latest_model_output_file)
 
                 if epoch_num > self.max_epochs:
                     self.save(model_output_file)
