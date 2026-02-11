@@ -267,17 +267,17 @@ def main():
             "num_envs": args.num_envs,
             'seed': cfg_train['params']['seed'],
             'num_envs': cfg['env']['numEnvs'],
+            'env': cfg['env'],
+            'train': cfg_train['params']['config'],
+            'network': cfg_train['params'].get('network', {}),
             **cfg,
             **cfg_train
         },
-        'env': cfg['env'],
-        'train': cfg_train['params']['config'],
-        'network': cfg_train['params'].get('network', {}),
         "id":args.wandb_id,
-        "resume":"must",
+        "resume":"allow",
 
     }
-    wandb.init(wandb_kwargs)
+    wandb.init(**wandb_kwargs)
 
     vargs = vars(args)
 
