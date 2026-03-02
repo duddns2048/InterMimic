@@ -8,6 +8,9 @@ isaacgym/python/
 isaacgym/docker/
 checkpoints/
 
-*.pt
+InterAct/OMOMO
+InterAct/OMOMO_new
+InterAct/OMOMO_retarget
+# *.pt
 *.zip
-*.sh
+# *.sh

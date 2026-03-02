@@ -10,12 +10,13 @@ python -m intermimic.run \
     --task InterMimic \
     --cfg_env isaacgym/src/intermimic/data/cfg/omomo_train.yaml \
     --cfg_train isaacgym/src/intermimic/data/cfg/train/rlg/omomo.yaml \
-    --headless \
     --output checkpoints \
-    --experiment intermimic_teacher \
+    --experiment "[Intermimic]_sub1_clothesstand" \
     --num_envs 2048 \
     --minibatch_size 16384\
-    --motion_file InterAct/OMOMO \
-    --dataSub sub2 \
-    --wandb \
+    --motion_file InterAct/single/sub1_clothesstand \
+    --dataSub sub1 \
     --wandb_project intermimic \
+    --headless \
+    # --resume_from checkpoints/s110/nn/s110_kettle_overfitting_tmp_tmp_latest.pth \
+    # --wandb_id YOUR_RUN_ID \
