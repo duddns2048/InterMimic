@@ -92,6 +92,11 @@ class InterMimicAgent(common_agent.CommonAgent):
             for key in component_keys
         }
 
+        # Epoch-wise counters for wandb logging
+        self._epoch_num_resets = 0        # Total number of resets in this epoch
+        self._epoch_high_progress_90 = 0     # Count of resets with episode_progress >= 0.9
+        self._epoch_high_progress_80 = 0
+
         return
     
     def set_eval(self):
@@ -219,6 +224,11 @@ class InterMimicAgent(common_agent.CommonAgent):
             if 'episode_progress' in infos and infos['episode_progress'] is not None:
                 episode_progress = infos['episode_progress']  # shape: [num_reset_envs]
                 self.game_reward_components['episode_progress'].update(episode_progress.unsqueeze(-1))
+
+                # Track epoch-wise statistics
+                self._epoch_num_resets += episode_progress.shape[0]
+                self._epoch_high_progress_90 += (episode_progress >= 0.9).sum().item()
+                self._epoch_high_progress_80 += (episode_progress >= 0.80).sum().item()
 
             all_done_indices = self.dones.nonzero(as_tuple=False)
             self.done_indices = all_done_indices[::self.num_agents]

@@ -192,6 +192,16 @@ class CommonAgent(a2c_continuous.A2CAgent):
                         "info/entropy": torch_ext.mean_list(train_info['entropy']).item(),
                     }
 
+                    # # Add reward component means if available
+                    # if hasattr(self, 'game_reward_components'):
+                    #     for key, rms in self.game_reward_components.items():
+                    #         mean_val = rms.get_mean()
+                    #         if isinstance(mean_val, torch.Tensor):
+                    #             mean_val = mean_val.item()
+                    #         if 'progress' in key:
+                    #             log_dict[f"info/{key}"] = mean_val
+                    #         else:
+                    #             log_dict[f"reward_components/{key}"] = mean_val
                     # Add reward component means if available
                     if hasattr(self, 'game_reward_components'):
                         for key, rms in self.game_reward_components.items():
@@ -200,8 +210,29 @@ class CommonAgent(a2c_continuous.A2CAgent):
                                 mean_val = mean_val.item()
                             if 'progress' in key:
                                 log_dict[f"info/{key}"] = mean_val
-                            else:
-                                log_dict[f"reward_components/{key}"] = mean_val
+                            if key in ['rb', 'ro', 'rig', 'rcg']:
+                                log_dict[f"reward_main_component/{key}"] = mean_val
+                            if key in ['rb', 'rp', 'rr', 'energy', 'wrist_rwp', 'wrist_rwr']:
+                                log_dict[f"reward_body/{key}"] = mean_val
+                            if key in ['ro', 'rop', 'ror', 'obj_energy']:
+                                log_dict[f"reward_object/{key}"] = mean_val
+                            if key in ['rcg', 'rcg_hand', 'rcg_other', 'rcg_all', 'contact_energy']:
+                                log_dict[f"reward_contact/{key}"] = mean_val
+                            if key in ['contact_progress', 'episode_progress']:
+                                log_dict[f"info/{key}"] = mean_val
+
+                    if hasattr(self, '_epoch_num_resets'):
+                        log_dict["info/num_resets"] = self._epoch_num_resets
+                        if self._epoch_num_resets > 0:
+                            log_dict["info/episode_progress_ratio_90"] = self._epoch_high_progress_90 / self._epoch_num_resets
+                            log_dict["info/episode_progress_ratio_80"] = self._epoch_high_progress_80 / self._epoch_num_resets
+                        else:
+                            log_dict["info/episode_progress_ratio_90"] = 0.0
+                            log_dict["info/episode_progress_ratio_80"] = 0.0
+                        # Reset counters for next epoch
+                        self._epoch_num_resets = 0
+                        self._epoch_high_progress_90 = 0
+                        self._epoch_high_progress_80 = 0
 
                     wandb.log(log_dict)
 
