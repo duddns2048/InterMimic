@@ -7,7 +7,7 @@ REPO_ROOT="$(CDPATH= cd -- "${SCRIPT_DIR}/../.." && pwd)"
 export PYTHONPATH="$REPO_ROOT/isaacgym/src:$REPO_ROOT:$PYTHONPATH"
 
 python -m intermimic.run \
-    --task InterMimic \
+    --task InterMimic_GRAB \
     --cfg_env isaacgym/src/intermimic/data/cfg/grab_train.yaml \
     --cfg_train isaacgym/src/intermimic/data/cfg/train/rlg/grab.yaml \
     --output checkpoints \
