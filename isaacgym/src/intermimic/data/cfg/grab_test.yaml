@@ -2,7 +2,7 @@
 env: 
   numEnvs: 4096
   envSpacing: 2
-  episodeLength: 300
+  episodeLength: 1000
   isFlagrun: False
   enableDebugVis: False
   playdataset: False
@@ -13,9 +13,9 @@ env:
   pdControl: True
   powerScale: 1.0
   controlFrequencyInv: 2 # 30 Hz
-  stateInit: "Hybrid" #Random
-  rolloutLength: 300
-  hybridInitProb: 0.1
+  stateInit: "Start" #Random
+  rolloutLength: 1000
+  hybridInitProb: 0.5
   dataFPS: 30
   dataFramesScale: 1 # 25->30fps
   dataSub: ['sub2']
@@ -29,10 +29,10 @@ env:
   contactBodies: ["L_Hip", "L_Knee", "L_Ankle", "L_Toe", "R_Hip", "R_Knee", "R_Ankle", "R_Toe", "Torso", "Spine", "Chest", "Neck", "Head", "L_Thorax", "L_Shoulder", "L_Elbow", "L_Wrist", "R_Thorax", "R_Shoulder", "R_Elbow", "R_Wrist", "L_Index3", "L_Middle3", "L_Pinky3", "L_Ring3","L_Thumb3","R_Index3", "R_Middle3", "R_Pinky3", "R_Ring3","R_Thumb3"] #["right_foot", "left_foot"]
   terminationHeight: 0.15
   enableEarlyTermination: True
-  physicalBufferSize: 3
+  enableEvaluation: True
 
   asset:
-    assetRoot: "./isaacgym/src/intermimic/data/assets/Parahome/sim_object"
+    assetRoot: "intermimic/data/assets"
 
   plane:
     staticFriction: 0.9

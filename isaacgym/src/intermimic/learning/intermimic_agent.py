@@ -243,7 +243,8 @@ class InterMimicAgent(common_agent.CommonAgent):
             self.current_lengths = self.current_lengths * not_dones
 
             if (self.vec_env.env.task.viewer):
-                self._amp_debug(infos)
+                # self._amp_debug(infos)
+                pass
                 
             self.done_indices = self.done_indices[:, 0]
             play_time_after_env_step_end = time.time()

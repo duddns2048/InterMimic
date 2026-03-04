@@ -13,7 +13,8 @@ env:
   pdControl: True
   powerScale: 1.0
   controlFrequencyInv: 2 # 30 Hz
-  stateInit: "Hybrid" #Random
+  # stateInit: "Hybrid" #Random
+  stateInit: "Start"
   rolloutLength: 300
   hybridInitProb: 0.1
   dataFPS: 30
@@ -32,7 +33,7 @@ env:
   physicalBufferSize: 3
 
   asset:
-    assetRoot: "./isaacgym/src/intermimic/data/assets/Parahome/sim_object"
+    assetRoot: "intermimic/data/assets"
 
   plane:
     staticFriction: 0.9

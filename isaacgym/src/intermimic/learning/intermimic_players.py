@@ -49,9 +49,16 @@ class InterMimicPlayerContinuous(common_player.CommonPlayer):
         sum_steps = 0
         sum_game_res = 0
         n_games = n_games * n_game_life * 10
+        n_games = 1
         games_played = 0
         has_masks = False
         has_masks_func = getattr(self.env, "has_action_mask", None) is not None
+
+        # Success rate tracking
+        success_count = 0
+        fail_count = 0
+        num_test_episodes = getattr(self.env.task, 'num_test_episodes', -1)
+        num_test_episodes=20000
 
         op_agent = getattr(self.env, "create_agent", None)
         if op_agent:
@@ -123,22 +130,20 @@ class InterMimicPlayerContinuous(common_player.CommonPlayer):
                         sum_rewards += cur_rewards
                         sum_steps += cur_steps
 
-                        game_res = 0.0
-                        if isinstance(info, dict):
-                            if 'battle_won' in info:
-                                print_game_res = True
-                                game_res = info.get('battle_won', 0.5)
-                            if 'scores' in info:
-                                print_game_res = True
-                                game_res = info.get('scores', 0.5)
-                        if self.print_stats:
-                            if print_game_res:
-                                print('reward:', cur_rewards/done_count, 'steps:', cur_steps/done_count, 'w:', game_res)
-                            else:
-                                print('reward:', cur_rewards/done_count, 'steps:', cur_steps/done_count)
-                        sum_game_res += game_res
-                        if batch_size//self.num_agents == 1 or games_played >= n_games:
-                            break
+                        terminate_buf = info.get('terminate', None)
+                        if terminate_buf is not None:
+                            for idx in done_indices:
+                                i = idx.item()
+                                if terminate_buf[i].item() == 0:
+                                    success_count += 1
+                                else:
+                                    fail_count += 1
+                            total = success_count + fail_count
+                            print(f"[Eval] {total} episodes | Success: {success_count} | Fail: {fail_count} | Rate: {success_count/total*100:.1f}%")
+
+                            # Stop if num_test_episodes reached
+                            if num_test_episodes > 0 and total >= num_test_episodes:
+                                break
                     
                     done_indices = done_indices[:, 0]
 

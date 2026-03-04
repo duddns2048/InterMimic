@@ -217,6 +217,7 @@ class Humanoid_SMPLX(BaseTask):
         upper = gymapi.Vec3(spacing, spacing, spacing)
 
         asset_root_cfg = self.cfg["env"]["asset"]["assetRoot"]
+        asset_root_cfg = './isaacgym/src/intermimic/data/assets/'
         asset_file = self.robot_type
 
         asset_path = resolve_repo_path(os.path.join(asset_root_cfg, asset_file))
@@ -256,8 +257,8 @@ class Humanoid_SMPLX(BaseTask):
         self.dof_limits_lower = []
         self.dof_limits_upper = []
 
-        max_agg_bodies = self.num_humanoid_bodies + 2
-        max_agg_shapes = self.num_humanoid_shapes + 65        
+        max_agg_bodies = self.num_humanoid_bodies + 200
+        max_agg_shapes = self.num_humanoid_shapes + 200       
         
         for i in range(self.num_envs):
             # create env instance

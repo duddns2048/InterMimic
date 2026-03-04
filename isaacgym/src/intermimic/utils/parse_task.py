@@ -28,6 +28,7 @@
 
 from ..env.tasks.intermimic import InterMimic
 from ..env.tasks.intermimic_parahome import InterMimic_Parahome
+from ..env.tasks.intermimic_grab import InterMimic_GRAB
 from ..env.tasks.intermimic_all import InterMimic_All
 from ..env.tasks.intermimic_g1 import InterMimicG1
 from ..env.tasks.vec_task_wrappers import VecTaskPythonWrapper, VecTaskDAggerWrapper

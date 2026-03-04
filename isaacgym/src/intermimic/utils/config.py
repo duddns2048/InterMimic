@@ -260,7 +260,9 @@ def get_args(benchmark=False):
         {"name": "--wandb_id", "type": str, "default": None,
             "help": "Weights & Biases run ID to continue logging to an existing run"},
         {"name": "--resume_from", "type": str, "default": "",
-            "help": "Path to checkpoint to resume training from"}]
+            "help": "Path to checkpoint to resume training from"},
+        {"name": "--robotType", "type": str, "default": "",
+            "help": "Robot type asset path (e.g. smplx/omomo.xml, g1/g1_29dof_with_hand.urdf). Overrides yaml config"}]
 
     if benchmark:
         custom_parameters += [{"name": "--num_proc", "type": int, "default": 1, "help": "Number of child processes to launch"},
